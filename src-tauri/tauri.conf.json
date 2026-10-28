@@ -1,0 +1,41 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Galpi",
+  "version": "0.1.0",
+  "identifier": "kr.galpi.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{
+      "label": "main",
+      "title": "갈피",
+      "width": 720,
+      "height": 720,
+      "resizable": false,
+      "maximizable": false,
+      "decorations": false,
+      "transparent": true,
+      "backgroundColor": "#00000000",
+      "windowEffects": { "effects": ["acrylic"], "color": [245, 243, 237, 190] },
+      "center": true,
+      "visible": false
+    }],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: http://asset.localhost data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; frame-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "shortDescription": "한 줄로 시작하는 기록 습관",
+    "icon": ["icons/icon.ico"],
+    "windows": {
+      "nsis": { "languages": ["Korean", "English"], "displayLanguageSelector": false },
+      "webviewInstallMode": { "type": "downloadBootstrapper" }
+    }
+  }
+}

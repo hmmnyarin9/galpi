@@ -1,0 +1,21 @@
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+.tools/
+*.log
+site/.openai/local/
+
+# Separate hosting workspace and generated site artifacts
+/site/
+
+# Executables, installers and debug symbols
+*.exe
+*.msi
+*.msix
+*.pdb
+
+# Local application data
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
