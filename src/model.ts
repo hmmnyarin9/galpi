@@ -45,7 +45,7 @@ export function filterEntries(entries: Entry[], view: View, query: string, now =
   const needle = query.trim().normalize('NFC').toLocaleLowerCase('ko-KR');
   return entries.filter(entry => {
     const date = new Date(entry.createdAt);
-    const inRange = view === 'all' || (date >= start && date < tomorrow);
+    const inRange = !!needle || view === 'all' || (date >= start && date < tomorrow);
     const matches = `${entry.body}\n${entry.nextAction}`.normalize('NFC').toLocaleLowerCase('ko-KR').includes(needle);
     return inRange && matches;
   }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

@@ -16,6 +16,14 @@ test('search finds next actions and normalizes Korean Unicode', () => {
   assert.equal(filterEntries(entries, 'all', '한글'.normalize('NFD'), now)[0].id, 'today');
   assert.equal(filterEntries(entries, 'all', '없는 단어', now).length, 0);
 });
+
+test('a search spans all dates and clearing it restores the selected period', () => {
+  assert.deepEqual(filterEntries(entries, 'today', '지난주', now).map(e => e.id), ['old']);
+  assert.deepEqual(filterEntries(entries, 'week', '지난주', now).map(e => e.id), ['old']);
+  assert.deepEqual(filterEntries(entries, 'today', '  ', now).map(e => e.id), ['today']);
+  const previous = entry('previous-action', 21, '작업 기록', '다음 배포');
+  assert.equal(filterEntries([previous], 'today', '배포', now)[0].id, previous.id);
+});
 test('markdown includes body and optional next action', () => {
   const markdown = toMarkdown([entry('one', 28, '본문\n두 줄', '다음')]);
   assert.ok(markdown.includes('본문\n두 줄'));

@@ -68,6 +68,7 @@ textarea::placeholder, input::placeholder { color: #8b8f83; }
 .search { min-width: 0; }
 .search input { width: 132px; max-width: 100%; border: 1px solid transparent; border-radius: 4px; padding: 8px; background: none; font-size: 12px; }
 .search input:focus { border-color: var(--line); background: #fffefa; }
+.search-status { margin: 12px 0 0; color: var(--muted); font-size: 11px; }
 .empty-state { padding: 42px 8px; text-align: center; color: var(--muted); }
 .empty-state h3 { font-size: 13px; font-weight: 400; margin: 0 0 8px; }
 .empty-state p { font-size: 12px; margin: 0; line-height: 1.7; }
