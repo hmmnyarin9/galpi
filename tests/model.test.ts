@@ -24,6 +24,22 @@ test('a search spans all dates and clearing it restores the selected period', ()
   const previous = entry('previous-action', 21, '작업 기록', '다음 배포');
   assert.equal(filterEntries([previous], 'today', '배포', now)[0].id, previous.id);
 });
+
+test('custom dates override the selected view and include both local boundary days', () => {
+  const range = { from: '2026-10-21', to: '2026-10-22' };
+  assert.deepEqual(filterEntries(entries, 'today', '', now, range).map(e => e.id), ['week', 'old']);
+  assert.deepEqual(filterEntries(entries, 'today', '지난주', now, range).map(e => e.id), ['old']);
+  assert.equal(filterEntries(entries, 'all', '한글', now, range).length, 0);
+  const midnight = { ...entry('midnight', 22, '자정'), createdAt: new Date(2026, 9, 22, 0, 0).toISOString() };
+  const lastMinute = { ...entry('late', 22, '늦은 기록'), createdAt: new Date(2026, 9, 22, 23, 59, 59).toISOString() };
+  assert.deepEqual(filterEntries([midnight, lastMinute], 'today', '', now, { from: '2026-10-22', to: '2026-10-22' }).map(e => e.id), ['late', 'midnight']);
+});
+
+test('custom dates support open bounds and reversed ranges produce no matches', () => {
+  assert.deepEqual(filterEntries(entries, 'today', '', now, { to: '2026-10-22' }).map(e => e.id), ['week', 'old']);
+  assert.deepEqual(filterEntries(entries, 'today', '', now, { from: '2026-10-28' }).map(e => e.id), ['future', 'today']);
+  assert.equal(filterEntries(entries, 'all', '', now, { from: '2026-10-28', to: '2026-10-21' }).length, 0);
+});
 test('markdown includes body and optional next action', () => {
   const markdown = toMarkdown([entry('one', 28, '본문\n두 줄', '다음')]);
   assert.ok(markdown.includes('본문\n두 줄'));

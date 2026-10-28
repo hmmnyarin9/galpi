@@ -32,7 +32,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <div id="next-action-wrap" hidden><label for="next-action">다음에 할 일 <span>선택</span></label><input id="next-action" maxlength="2000" placeholder="다시 시작할 나에게 작은 힌트를 남겨주세요." /></div>
       <div class="composer-footer"><button type="button" id="toggle-next" class="text-button" aria-expanded="false" aria-controls="next-action-wrap">＋ 다음 할 일</button><div class="save-group"><span id="draft-label" role="status"></span><span id="save-hint">Ctrl + Enter</span><button type="submit" id="save-button" class="primary" disabled>저장</button></div></div></form>
     </section>
-    <section id="records-panel" class="records-section" aria-label="저장한 기록"><div class="records-toolbar"><nav aria-label="기록 기간"><button data-view="today" class="nav-button selected">오늘 <span class="count" id="today-count">0</span></button><button data-view="week" class="nav-button">7일</button><button data-view="all" class="nav-button">전체</button></nav><label class="search"><input id="search" type="search" title="검색 (Ctrl+F)" aria-keyshortcuts="Control+f Meta+f" placeholder="검색" aria-label="기록 검색" /></label></div><p id="search-status" class="search-status" role="status" hidden></p><h2 id="records-title" class="sr-only">오늘 기록 <span id="visible-count">0</span></h2><div id="records" aria-live="polite"></div></section>
+    <section id="records-panel" class="records-section" aria-label="저장한 기록"><div class="records-toolbar"><nav aria-label="기록 기간"><button data-view="today" class="nav-button selected">오늘 <span class="count" id="today-count">0</span></button><button data-view="week" class="nav-button">7일</button><button data-view="all" class="nav-button">전체</button></nav><div class="search-tools"><label class="search"><input id="search" type="search" title="검색 (Ctrl+F)" aria-keyshortcuts="Control+f Meta+f" placeholder="검색" aria-label="기록 검색" /></label><button type="button" id="toggle-date-range" class="date-range-toggle" title="기간 지정" aria-label="날짜 범위 지정" aria-expanded="false" aria-pressed="false" aria-controls="date-range-panel"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M8 3v4m8-4v4M4 11h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div></div><div id="date-range-panel" class="date-range-panel" hidden><label for="date-from">시작일<input id="date-from" type="date" /></label><label for="date-to">종료일<input id="date-to" type="date" /></label><button type="button" id="clear-date-range" class="secondary">기간 초기화</button><p id="date-error" class="date-error" role="alert" hidden>시작일이 종료일보다 늦어요. 날짜를 확인해주세요.</p></div><p id="search-status" class="search-status" role="status" hidden></p><h2 id="records-title" class="sr-only">오늘 기록 <span id="visible-count">0</span></h2><div id="records" aria-live="polite"></div></section>
   </main>
   <div id="popup-backdrop" data-tauri-drag-region aria-hidden="true"></div>
   <dialog id="settings-dialog" aria-labelledby="settings-title"><form id="settings-form"><div class="dialog-top"><h2 id="settings-title">설정</h2><button type="button" class="icon-button" id="close-settings" aria-label="설정 닫기">×</button></div><div class="setting-row"><div><label for="launch-at-startup">Windows 시작 시 실행</label><p>Windows에 로그인하면 갈피를 실행해요.</p></div><input type="checkbox" id="launch-at-startup" role="switch" /></div><div class="setting-row startup-child" id="start-minimized-row"><div><label for="start-minimized">최소화로 시작</label><p>창을 띄우지 않고 트레이에서 시작해요.</p></div><input type="checkbox" id="start-minimized" disabled /></div><div class="setting-row"><div><label for="reminder-enabled">하루 한 번, 기록 알림</label><p>앱이 실행 중일 때 정한 시간에 알려드려요.</p></div><input type="checkbox" id="reminder-enabled" role="switch" /></div><div class="setting-row"><label for="reminder-time">기록할 시간</label><input type="time" id="reminder-time" required /></div><p class="setting-note" id="reminder-note">Windows 알림 설정에 따라 알림이 표시되지 않을 수 있어요. 창을 닫아도 트레이에 남아 있고, 트레이 메뉴에서 종료할 수 있어요.</p><div class="shortcut-setting"><label for="shortcut-input">빠른 기록 단축키</label><div class="shortcut-input-row"><input id="shortcut-input" type="text" readonly aria-describedby="shortcut-note" aria-label="빠른 기록 단축키 · 선택 후 키 조합 입력" /><button type="button" id="reset-shortcut" class="secondary">기본값</button></div><p class="setting-note" id="shortcut-note">입력칸을 선택하고 Ctrl 또는 Alt와 영문·숫자·F키를 눌러주세요.</p></div><p class="error-box" id="settings-error" role="alert" hidden></p><button class="primary full-width" type="submit" id="settings-save">설정 저장</button><hr><div class="setting-row"><div><strong>기록 내보내기</strong><p>전체 기록을 JSON 파일로 저장해요.</p></div><button type="button" class="secondary" id="export-button">내보내기</button></div><p class="data-path" id="data-path"></p></form></dialog>
@@ -182,14 +182,21 @@ function focusComposer() {
 function render() {
   const query = $<HTMLInputElement>('#search').value;
   const searching = !!query.trim();
-  const effectiveView = searching ? 'all' : view;
-  const filtered = filterEntries(entries, view, query);
-  $('#search-status').hidden = !searching;
-  $('#search-status').textContent = `전체 기록 검색 · ${filtered.length}개`;
+  const from = $<HTMLInputElement>('#date-from').value;
+  const to = $<HTMLInputElement>('#date-to').value;
+  const customPeriod = !!from || !!to;
+  const effectiveView = customPeriod ? 'range' : searching ? 'all' : view;
+  const filtered = filterEntries(entries, view, query, new Date(), { from, to });
+  $('#date-error').hidden = !(from && to && from > to);
+  $<HTMLInputElement>('#date-from').max = to;
+  $<HTMLInputElement>('#date-to').min = from;
+  $('#toggle-date-range').setAttribute('aria-pressed', String(customPeriod));
+  $('#search-status').hidden = !searching && !customPeriod;
+  $('#search-status').textContent = customPeriod ? `${from || '처음'} ~ ${to || '끝'} · ${searching ? '검색 ' : ''}${filtered.length}개` : `전체 기록 검색 · ${filtered.length}개`;
   $('#today-count').textContent = String(filterEntries(entries, 'today', '').length);
   $('#visible-count').textContent = String(filtered.length);
   const titles = { today: '오늘 남긴 갈피', all: '차곡차곡 쌓인 갈피', week: '지난 7일의 갈피' };
-  $('#records-title').firstChild!.textContent = `${searching ? '검색 결과' : titles[view]} `;
+  $('#records-title').firstChild!.textContent = `${searching ? '검색 결과' : customPeriod ? '기간별 기록' : titles[view]} `;
   document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(button => {
     button.classList.toggle('selected', button.dataset.view === effectiveView);
     button.setAttribute('aria-current', button.dataset.view === effectiveView ? 'page' : 'false');
@@ -200,8 +207,8 @@ function render() {
     const empty = document.createElement('div');
     empty.className = 'empty-state';
     empty.innerHTML = '<h3></h3><p></p>';
-    empty.querySelector('h3')!.textContent = !ready ? '기록을 불러오고 있어요.' : $<HTMLInputElement>('#search').value.trim() ? '일치하는 갈피가 없어요.' : '아직 기록이 없어요.';
-    empty.querySelector('p')!.textContent = !ready ? '잠시만 기다려주세요.' : $<HTMLInputElement>('#search').value.trim() ? '다른 단어나 기간으로 찾아보세요.' : '위에 한 줄 남겨보세요.';
+    empty.querySelector('h3')!.textContent = !ready ? '기록을 불러오고 있어요.' : searching ? '일치하는 갈피가 없어요.' : customPeriod ? '이 기간의 기록이 없어요.' : '아직 기록이 없어요.';
+    empty.querySelector('p')!.textContent = !ready ? '잠시만 기다려주세요.' : searching || customPeriod ? '다른 단어나 기간으로 찾아보세요.' : '위에 한 줄 남겨보세요.';
     records.append(empty);
     return;
   }
@@ -367,8 +374,27 @@ $('#toggle-next').addEventListener('click', () => {
   if (!wrap.hidden) nextAction.focus();
 });
 $('.brand').addEventListener('click', event => { event.preventDefault(); view = 'today'; render(); focusComposer(); });
-document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(button => button.addEventListener('click', () => { view = button.dataset.view as View; render(); }));
+document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(button => button.addEventListener('click', () => {
+  view = button.dataset.view as View;
+  $<HTMLInputElement>('#date-from').value = '';
+  $<HTMLInputElement>('#date-to').value = '';
+  render();
+}));
 $('#search').addEventListener('input', render);
+$('#toggle-date-range').addEventListener('click', () => {
+  const panel = $('#date-range-panel');
+  panel.hidden = !panel.hidden;
+  $('#toggle-date-range').setAttribute('aria-expanded', String(!panel.hidden));
+  if (!panel.hidden) $('#date-from').focus();
+});
+$('#date-from').addEventListener('input', render);
+$('#date-to').addEventListener('input', render);
+$('#clear-date-range').addEventListener('click', () => {
+  $<HTMLInputElement>('#date-from').value = '';
+  $<HTMLInputElement>('#date-to').value = '';
+  render();
+  $('#date-from').focus();
+});
 
 async function focusSearch() {
   await setPopupMode(false);

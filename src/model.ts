@@ -24,6 +24,7 @@ export function shortcutFromKey(event: { code: string; ctrlKey: boolean; altKey:
 }
 
 export type View = 'today' | 'all' | 'week';
+export interface DateRange { from?: string; to?: string }
 
 export function validateEntry(body: string, nextAction: string): { body: string; nextAction: string } {
   const value = { body: body.trim(), nextAction: nextAction.trim() };
@@ -38,16 +39,18 @@ export function localDateKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-export function filterEntries(entries: Entry[], view: View, query: string, now = new Date()): Entry[] {
+export function filterEntries(entries: Entry[], view: View, query: string, now = new Date(), range: DateRange = {}): Entry[] {
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   if (view === 'week') start.setDate(start.getDate() - 6);
   const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const needle = query.trim().normalize('NFC').toLocaleLowerCase('ko-KR');
   return entries.filter(entry => {
     const date = new Date(entry.createdAt);
-    const inRange = !!needle || view === 'all' || (date >= start && date < tomorrow);
+    const day = localDateKey(date);
+    const inView = !!needle || !!range.from || !!range.to || view === 'all' || (date >= start && date < tomorrow);
+    const inRange = (!range.from || day >= range.from) && (!range.to || day <= range.to);
     const matches = `${entry.body}\n${entry.nextAction}`.normalize('NFC').toLocaleLowerCase('ko-KR').includes(needle);
-    return inRange && matches;
+    return inView && inRange && matches;
   }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
