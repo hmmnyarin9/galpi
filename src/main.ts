@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { LogicalSize, PhysicalPosition } from '@tauri-apps/api/dpi';
+import { searchText } from './search';
 import * as bridge from './bridge';
 import { filterEntries, localDateKey, defaultShortcut, shortcutFromKey, type Entry, type Settings, type View } from './model';
 
@@ -151,6 +152,17 @@ function message(text: string) {
 
 function errorText(error: unknown) { return error instanceof Error ? error.message : String(error); }
 
+function writeRecordText(target: HTMLElement, value: string, query: string, excerpt = true): boolean {
+  const result = searchText(value, query, excerpt);
+  target.replaceChildren(...result.parts.map(part => {
+    if (!part.matched) return document.createTextNode(part.text);
+    const mark = document.createElement('mark');
+    mark.textContent = part.text;
+    return mark;
+  }));
+  return result.truncated;
+}
+
 function updateDraft() {
   saveButton.disabled = !ready || saving || !body.value.trim();
   try {
@@ -200,7 +212,7 @@ function render() {
     if (effectiveView !== 'today' && previousDay !== day) {
       const heading = document.createElement('h3');
       heading.className = 'day-heading';
-      heading.textContent = date.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' });
+      heading.textContent = date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
       records.append(heading);
       previousDay = day;
     }
@@ -213,17 +225,34 @@ function render() {
     content.className = 'record-content';
     const text = document.createElement('p');
     text.className = 'record-body';
-    text.textContent = entry.body;
+    let truncated = writeRecordText(text, entry.body, query);
     content.append(text);
+    let actionText: HTMLParagraphElement | undefined;
     if (entry.nextAction) {
       const next = document.createElement('div');
       next.className = 'record-next';
       const label = document.createElement('span');
       label.textContent = '↳ 다음에는';
       const action = document.createElement('p');
-      action.textContent = entry.nextAction;
+      truncated = writeRecordText(action, entry.nextAction, query) || truncated;
+      actionText = action;
       next.append(label, action);
       content.append(next);
+    }
+    if (searching && truncated) {
+      let expanded = false;
+      const expand = document.createElement('button');
+      expand.className = 'record-expand';
+      expand.textContent = '전체 보기';
+      expand.setAttribute('aria-expanded', 'false');
+      expand.addEventListener('click', () => {
+        expanded = !expanded;
+        writeRecordText(text, entry.body, query, !expanded);
+        if (actionText) writeRecordText(actionText, entry.nextAction, query, !expanded);
+        expand.textContent = expanded ? '접기' : '전체 보기';
+        expand.setAttribute('aria-expanded', String(expanded));
+      });
+      content.append(expand);
     }
     const actions = document.createElement('div');
     actions.className = 'record-actions';

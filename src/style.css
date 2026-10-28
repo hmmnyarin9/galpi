@@ -76,6 +76,8 @@ textarea::placeholder, input::placeholder { color: #8b8f83; }
 .record time { min-width: 34px; padding-top: 5px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 .record-content { flex: 1; min-width: 0; }
 .record-body { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.8; }
+.record mark { background: #f2dfad; color: inherit; border-radius: 2px; }
+.record-expand { border: 0; background: none; color: var(--accent); font-size: 11px; padding: 6px 0; margin-top: 5px; }
 .record-next { display: flex; gap: 8px; margin-top: 10px; padding-left: 10px; border-left: 2px solid #d9ddcf; color: #6c765f; font-size: 12px; }
 .record-next span { white-space: nowrap; line-height: 1.8; }
 .record-next p { margin: 0; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
